@@ -2,6 +2,10 @@
 #include <time.h>
 #include "hal.h"
 
+#include <stdint.h>
+
+typedef uint8_t bit_array_t[64];
+#define ALIAS(bit_m) (uint32_t *)(0x22000000 + ((unsigned)((void *)bit_m - 0x20000000) * 32U))
 
 void main(void)
 {
@@ -9,16 +13,27 @@ void main(void)
 
     printf("Hello!!\n");
 
+    bit_array_t volatile bit_array = {0xff,0x00};
+    uint32_t volatile * const array_alias = ALIAS(bit_array);
+
+    printf("Alias address %X\n", array_alias);
+
     unsigned long long cycles_tot=0, cycles1, cycles2;
     double time_taken=0, start, end;
 
     for (int i = 0; i < N_ITERATIONS; ++i) {
 
+        printf("%0x %0X\n", bit_array[0], bit_array[1]);
         start = (double) clock();
         cycles1 = PLATFORM_CLOCK();
         // test code here
+        uint32_t temp = array_alias[1];
+        array_alias[1] = array_alias[10];
+        array_alias[10] = temp;
+
         cycles2 = PLATFORM_CLOCK();
         end = (double)clock();
+        printf("%0x %0X\n", bit_array[0], bit_array[1]);
 
         time_taken += (end - start) / ((double) CLOCKS_PER_SEC);
         cycles_tot += cycles2 - cycles1;
